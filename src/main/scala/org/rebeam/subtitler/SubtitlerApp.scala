@@ -1,6 +1,6 @@
 package org.rebeam.subtitler
 
-import java.io.File
+import java.io.{File, PrintWriter}
 
 import scala.io.Source
 
@@ -21,9 +21,30 @@ object SubtitlerApp extends App {
     padTwo(h.toString) + ":" + padTwo(m.toString) + ":" + padTwo(s.toString) + "," + padThree(ms.toString)
   }
 
+  def tolerantUTF8Source(file: File) = {
+//    import java.nio.charset.CodingErrorAction
+//    import scala.io.Codec
+//
+//    val codec = Codec("UTF-8")
+//    codec.onMalformedInput(CodingErrorAction.REPLACE)
+//    codec.onUnmappableCharacter(CodingErrorAction.REPLACE)
+//
+//    Source.fromFile(file)(codec)
+    Source.fromFile(file)("ISO-8859-1")
+  }
+
   def convert(file: File, outFile: File, factor: Double): Unit = {
     println(file)
-    for (line <- Source.fromFile(file)("ISO-8859-1").getLines()) {
+
+    val writer = new PrintWriter(outFile, "UTF-8")
+
+    def out(s: String): Unit = {
+      writer.write(s + "\r\n")
+      println(s)
+    }
+
+//    for (line <- Source.fromFile(file)("ISO-8859-1").getLines()) {
+    for (line <- tolerantUTF8Source(file).getLines()) {
       line match {
         case TimingLine(h1, m1, s1, ms1, h2, m2, s2, ms2) => {
 //          println("TimingLine(" + h1 + ", " + m1 + ", " + s1 + ", " + ms1 + ", " + h2 + ", " + m2 + ", " + s2 + ", " + ms2 + ")")
@@ -33,22 +54,26 @@ object SubtitlerApp extends App {
 //          println(t1 + "ms to " + t2 + "ms")
 //          println(line)
           val reformatted = timeFormat((t1 * factor).toInt) + " --> " + timeFormat((t2 * factor).toInt)
-          println(reformatted)
+//          println(line)
+          out(reformatted)
         }
-        case _ => println(line)
+        case _ => out(line)
       }
     }
+
+    writer.close()
+
   }
 
 
   val home = System.getProperty("user.home")
 
-  val dir = new File(home + "/Downloads/s01")
+  val dir = new File(home + "/Documents/s01")
   val outDir = new File(dir, "out")
 
-  val files = dir.listFiles().filter(_.isFile)
+  val files = dir.listFiles().filter(f => f.isFile && f.getName.endsWith(".srt"))
 
-  files.headOption.foreach(f => convert(f, new File(outDir, f.getName), 23.976/25.0))
+  files.foreach(f => convert(f, new File(outDir, f.getName), 23.976/25.0))
 
 //  val dir = new File(Sys)
 
