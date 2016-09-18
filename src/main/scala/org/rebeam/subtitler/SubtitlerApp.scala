@@ -73,7 +73,7 @@ object SubtitlerApp extends App {
 
   val files = dir.listFiles().filter(f => f.isFile && f.getName.endsWith(".srt"))
 
-  files.foreach(f => convert(f, new File(outDir, f.getName), 23.976/25.0))
+  files.foreach(f => convert(f, new File(outDir, f.getName), 24.0/25.0))
 
 //  val dir = new File(Sys)
 
